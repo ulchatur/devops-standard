@@ -1,0 +1,73 @@
+name: Scheduled PowerShell Scripts Runner
+
+on:
+  # schedule:
+  #   - cron: "0 2 * * *"   # Daily at 2 AM UTC
+  workflow_dispatch:
+
+concurrency:
+  group: scheduled-ps-runner
+  cancel-in-progress: false
+
+jobs:
+  run-scripts:
+    runs-on: windows-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Create Logs Directory
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path logs
+
+      - name: Run All PowerShell Scripts
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $scripts = Get-ChildItem -Path "scripts" -Filter "*.ps1" |
+                     Where-Object { $_.Name -ne "common-logging.ps1" }
+
+          $failed = $false
+
+          foreach ($script in $scripts) {
+
+              $scriptName = $script.Name
+              $logFile = "logs/$scriptName.log"
+
+              Write-Host "========================================"
+              Write-Host "Running $scriptName"
+              Write-Host "========================================"
+
+              try {
+                  pwsh $script.FullName -LogFilePath $logFile
+              }
+              catch {
+                  Write-Host "❌ $scriptName failed"
+                  $failed = $true
+              }
+          }
+
+          if ($failed) {
+              Write-Host "One or more scripts failed."
+              exit 1
+          }
+          else {
+              Write-Host "All scripts executed successfully."
+          }
+
+      - name: Upload Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: powershell-script-logs
+          path: logs/
+
+      - name: Notify on Failure (Optional)
+        if: failure()
+        shell: pwsh
+        run: |
+          Write-Host "Workflow failed. Add Slack/Teams webhook here if needed."
