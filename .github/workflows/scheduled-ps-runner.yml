@@ -46,7 +46,7 @@ jobs:
                   pwsh $script.FullName -LogFilePath $logFile
               }
               catch {
-                  Write-Host "❌ $scriptName failed"
+                  Write-Host "$scriptName failed"
                   $failed = $true
               }
           }
@@ -65,9 +65,3 @@ jobs:
         with:
           name: powershell-script-logs
           path: logs/
-
-      - name: Notify on Failure (Optional)
-        if: failure()
-        shell: pwsh
-        run: |
-          Write-Host "Workflow failed. Add Slack/Teams webhook here if needed."

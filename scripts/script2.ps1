@@ -7,6 +7,7 @@ Initialize-Logger -LogFilePath $LogFilePath
 
 Write-Log "Script2 started"
 Write-MasterLog "script2.ps1 execution started"
+$test = 10 / 0
 
 try {
     Write-Log "Performing sample calculation"
